@@ -4,8 +4,13 @@ from rest_framework.permissions import AllowAny
 from .serializers import UserRegistrationSerializer, UserLoginSerializer, UserTokenSerializer
 from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
-# User = get_user_model()
+User = get_user_model()
 
 class UserRegistrationView(generics.CreateAPIView):
     serializer_class = UserRegistrationSerializer
@@ -68,3 +73,33 @@ class UserLoginView(generics.GenericAPIView):
             }, status=200)
         else:
             return Response({"detail": "Invalid credentials"}, status=401)
+
+
+class UserDetailView(generics.RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        
+        refresh = RefreshToken.for_user(user)
+
+        token_data = {
+            'tokens': {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token)
+            },
+            'user': {
+                'username': str(user.username),
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'phone_number': user.phone_number or '',
+                'address': user.address or '',
+                'image_url': user.image_url or '',
+                'is_staff': user.is_staff,
+                'is_superuser': user.is_superuser,
+            }
+        }
+
+        return Response(token_data, status=200)
