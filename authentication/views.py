@@ -18,8 +18,8 @@ class UserRegistrationView(generics.CreateAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         try:
-            serializer.is_valid(raise_exception=True)  # Validate the data
-            user = serializer.save()  # Create the user
+            serializer.is_valid(raise_exception=True)  
+            user = serializer.save()  
 
             # Create refresh and access tokens
             refresh = RefreshToken.for_user(user)
@@ -36,8 +36,8 @@ class UserRegistrationView(generics.CreateAPIView):
                     'is_superuser': user.is_superuser,
                 },
                 'tokens': {
-                    'access': str(refresh.access_token),  # Access token
-                    'refresh': str(refresh),               # Refresh token
+                    'access': str(refresh.access_token), 
+                    'refresh': str(refresh),               
                 },
                 'message': 'User registered successfully.',
             }, status=status.HTTP_201_CREATED)
@@ -89,17 +89,7 @@ class UserDetailView(generics.RetrieveAPIView):
                 'refresh': str(refresh),
                 'access': str(refresh.access_token)
             },
-            'user': {
-                'username': str(user.username),
-                'email': user.email,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'phone_number': user.phone_number or '',
-                'address': user.address or '',
-                'image_url': user.image_url or '',
-                'is_staff': user.is_staff,
-                'is_superuser': user.is_superuser,
-            }
+            'user': UserTokenSerializer(user).data
         }
 
         return Response(token_data, status=200)
