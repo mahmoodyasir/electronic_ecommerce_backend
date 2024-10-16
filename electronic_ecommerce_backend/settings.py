@@ -76,7 +76,9 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'electronic_ecommerce_backend.wsgi.application'
+# WSGI_APPLICATION = 'electronic_ecommerce_backend.wsgi.application'
+
+ASGI_APPLICATION = 'electronic_ecommerce_backend.asgi.application'
 
 
 # Database
@@ -84,8 +86,12 @@ WSGI_APPLICATION = 'electronic_ecommerce_backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'electronic_ecommerce',  
+        'USER': 'postgres',      
+        'PASSWORD': '99005566@postgres',   
+        'HOST': 'localhost',            
+        'PORT': '5432', 
     }
 }
 
@@ -148,4 +154,6 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
+
+# uvicorn electronic_ecommerce_backend.asgi:application --host 0.0.0.0 --port 8000 --reload 
 
