@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -42,8 +43,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
+    'django_celery_results',
     'authentication',
     'product',
+    
 ]
 
 MIDDLEWARE = [
@@ -90,7 +93,7 @@ DATABASES = {
         'NAME': 'electronic_ecommerce',  
         'USER': 'postgres',      
         'PASSWORD': '99005566@postgres',   
-        'HOST': 'localhost',            
+        'HOST': 'pgdb',            
         'PORT': '5432', 
     }
 }
@@ -154,6 +157,12 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
+
+
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER", "redis://redis:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_BROKER", "redis://redis:6379/0")
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
 
 # uvicorn electronic_ecommerce_backend.asgi:application --host 0.0.0.0 --port 8000 --reload 
 

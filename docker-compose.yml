@@ -1,0 +1,47 @@
+version: "3.12"
+   
+services:
+    django:
+        build: .
+        container_name: electronic_ecommerce_backend
+        command: python manage.py runserver 0.0.0.0:8000
+        volumes:
+            - .:/usr/src/app/
+        ports:
+            - "8000:8000"
+        environment:
+            - DEBUG=1
+            - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
+            - CELERY_BROKER=redis://redis:6379/0
+            - CELERY_BACKEND=redis://redis:6379/0
+        depends_on:
+            - pgdb
+            - redis
+    celery:
+        build: .
+        command: celery -A electronic_ecommerce_backend worker -l INFO
+        volumes:
+            - .:/usr/src/app
+        environment:
+            - DEBUG=1
+            - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
+            - CELERY_BROKER=redis://redis:6379/0
+            - CELERY_BACKEND=redis://redis:6379/0
+            - CELERY_APP=electronic_ecommerce_backend.celery
+        depends_on:
+            - django
+            - redis
+    pgdb:
+        image: postgres
+        container_name: pgdb
+        environment:
+            - POSTGRES_DB=electronic_ecommerce
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=99005566@postgres
+        volumes:
+            - pgdata:/var/lib/postgresql/data/
+    redis:
+        image: "redis:alpine"
+        
+volumes:
+    pgdata:

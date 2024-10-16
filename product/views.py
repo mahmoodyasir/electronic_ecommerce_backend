@@ -6,18 +6,28 @@ from asgiref.sync import sync_to_async
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAdminUser
+from .tasks import create_product_task
 
 
 class ProductCreateView(APIView):
     permission_classes = [IsAdminUser]
 
     def post(self, request):
-        serializer = ProductSerializer(data=request.data)
-
-        if serializer.is_valid():
-            product = serializer.save()
-            product_data = ProductSerializer(product).data
-            return Response(product_data, status=status.HTTP_201_CREATED)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+        
+        tasks = create_product_task.delay(request.data)
+        
+        try:
+            
+            result = tasks.get(timeout=10)
+            
+            
+            if result.get('success') == False:
+                raise Exception(result.get('errors'))
+            
+            return Response({
+                "message": "Product creation complete.",
+                "product_data": result.get('product')
+                
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
