@@ -20,10 +20,18 @@ def create_product_task(product_data):
 @shared_task
 def get_all_products_task(page=1, page_size=10):
     offset = (page - 1) * page_size
-    products = Product.objects.all()[offset:offset + page_size] 
-
+    products = Product.objects.select_related('inventory_product').all()[offset:offset + page_size] 
+    
+    total_product = Product.objects.count()
+    
     serialized_products = ProductSerializer(products, many=True).data
-    return serialized_products
+    
+    response = {
+        "total": total_product,
+        "data": serialized_products
+    }
+    
+    return response
 
 
 @shared_task

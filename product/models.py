@@ -1,11 +1,22 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
+from datetime import datetime
+import uuid
 
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
         return self.name
+    
+    
+def generate_product_code():
+    now = datetime.now()
+    month_year = now.strftime("%b%Y")  # e.g., 'Oct2024'
+    unique_id = str(uuid.uuid4())[:8]
+    product_code = f"{unique_id}{month_year}"
+    return product_code
+
 
 class Product(models.Model):
     name = models.CharField(max_length=255)
@@ -19,6 +30,12 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+    
+    def save(self, *args, **kwargs):
+        if not self.product_code:
+            self.product_code = generate_product_code()
+        super().save(*args, **kwargs)
+        
 
 class KeyFeature(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='key_features')

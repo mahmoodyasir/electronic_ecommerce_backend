@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from inventory.models import Inventory
 from product.models import Category, KeyFeature, Product, Specification
 
 
@@ -13,22 +14,31 @@ class SpecificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Specification
         fields = ['category', 'name', 'value']
+        
+        
+class InventorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Inventory
+        fields = ['quantity', 'restock_alert', 'last_restocked'] 
+        
 
 class ProductSerializer(serializers.ModelSerializer):
     key_features = KeyFeatureSerializer(many=True, required=False)
     specifications = SpecificationSerializer(many=True, required=False)
+    inventory_product = InventorySerializer(required=False)
+    product_code = serializers.CharField(required=False)
     category = serializers.CharField()
 
     class Meta:
         model = Product
         fields = ['id', 'name', 'price', 'discount_price', 'product_code', 
                   'brand', 'category', 'image_urls', 'description', 
-                  'key_features', 'specifications']
+                  'key_features', 'specifications', 'inventory_product']
 
     def create(self, validated_data):
         key_features_data = validated_data.pop('key_features', [])
         specifications_data = validated_data.pop('specifications', [])
-        
+        inventory_data = validated_data.pop('inventory_product', {})
         category_name = validated_data.pop('category')
         
         category, _ = Category.objects.get_or_create(name=category_name)
@@ -40,6 +50,9 @@ class ProductSerializer(serializers.ModelSerializer):
 
         for specification_data in specifications_data:
             Specification.objects.create(product=product, **specification_data)
+        
+        if inventory_data:
+            Inventory.objects.create(product=product, **inventory_data)
 
         return product
 
