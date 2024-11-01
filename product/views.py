@@ -10,7 +10,7 @@ from asgiref.sync import sync_to_async
 from rest_framework.response import Response
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAdminUser
-from .tasks import create_product_task, delete_product_task, get_all_products_task, get_single_product_task, upload_image_to_s3_task
+from .tasks import create_product_task, delete_image_from_s3_task, delete_product_task, get_all_products_task, get_single_product_task, upload_image_to_s3_task
 from django.conf import settings
 import boto3
 import mimetypes
@@ -117,6 +117,66 @@ class ProductViewSet(viewsets.ViewSet):
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        
+    def update(self, request, pk=None):
+        self.permission_classes = [IsAdminUser]
+        self.check_permissions(request)
+
+        try:
+            product = Product.objects.get(pk=pk)
+
+            key_features_data = json.loads(request.data.get('key_features', '[]'))
+            specifications_data = json.loads(request.data.get('specifications', '[]'))
+            inventory_product_data = json.loads(request.data.get('inventory_product', '{}'))
+
+            updated_image_urls = json.loads(request.data.get('image_urls', '[]'))
+            existing_image_urls = list(product.image_urls)  
+            
+            images_to_delete = set(existing_image_urls) - set(updated_image_urls)
+            new_images = request.FILES.getlist('images')  
+
+            # Delete old images using Celery
+            for image_url in images_to_delete:
+                delete_image_from_s3_task.delay(image_url)
+            
+            # Upload new images using Celery and collect new URLs
+            new_image_urls = []
+            for image in new_images:
+                sanitized_filename = urllib.parse.quote(image.name.replace(" ", "_"))
+                temp_file_path = default_storage.save(f'static/{sanitized_filename}', image)
+                upload_image_to_s3_task.delay(temp_file_path, sanitized_filename)
+
+                new_image_url = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/products/{sanitized_filename}"
+                new_image_urls.append(new_image_url)
+            
+            # Combining existing URLs with new ones
+            updated_image_urls.extend(new_image_urls)
+            
+            serializer_data = {
+                'name': request.data.get('name', None),
+                'price': request.data.get('price', None),
+                'discount_price': request.data.get('discount_price', None),
+                'brand': request.data.get('brand', None),
+                'category': request.data.get('category', None),
+                'description': request.data.get('description', None),
+                'key_features': key_features_data,
+                'specifications': specifications_data,
+                'inventory_product': inventory_product_data,
+                'image_urls': updated_image_urls,
+            }
+
+            serializer = ProductSerializer(product, data=serializer_data, partial=True)
+            if serializer.is_valid():
+                product = serializer.save()
+                return Response(ProductSerializer(product).data, status=status.HTTP_200_OK)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Product.DoesNotExist:
+            return Response({"error": "Product not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
     def list(self, request):

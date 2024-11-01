@@ -56,25 +56,36 @@ class ProductSerializer(serializers.ModelSerializer):
 
         return product
 
-    # def update(self, instance, validated_data):
-    #     key_features_data = validated_data.pop('key_features', None)
-    #     specifications_data = validated_data.pop('specifications', None)
+    def update(self, instance, validated_data):
+        key_features_data = validated_data.pop('key_features', None)
+        specifications_data = validated_data.pop('specifications', None)
+        inventory_data = validated_data.pop('inventory_product', {})
+        category_name = validated_data.pop('category')
 
-    #     # Update Product instance
-    #     for attr, value in validated_data.items():
-    #         setattr(instance, attr, value)
-    #     instance.save()
 
-    #     # Update related KeyFeature instances
-    #     if key_features_data is not None:
-    #         instance.key_features.all().delete()  # Clear existing features if you want
-    #         for feature_data in key_features_data:
-    #             KeyFeature.objects.create(product=instance, **feature_data)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+            
+        if category_name:
+            category, _ = Category.objects.get_or_create(name=category_name)
+            instance.category = category
 
-    #     # Update related Specification instances
-    #     if specifications_data is not None:
-    #         instance.specifications.all().delete()  # Clear existing specifications if you want
-    #         for specification_data in specifications_data:
-    #             Specification.objects.create(product=instance, **specification_data)
+    
+        if key_features_data is not None:
+            instance.key_features.all().delete()  
+            for feature_data in key_features_data:
+                KeyFeature.objects.create(product=instance, **feature_data)
 
-    #     return instance
+
+        if specifications_data is not None:
+            instance.specifications.all().delete() 
+            for specification_data in specifications_data:
+                Specification.objects.create(product=instance, **specification_data)
+                
+                
+        if inventory_data:
+            Inventory.objects.update_or_create(product=instance, defaults=inventory_data)
+                  
+        instance.save()
+
+        return instance
