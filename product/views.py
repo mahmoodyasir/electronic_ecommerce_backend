@@ -219,8 +219,6 @@ class ProductViewSet(viewsets.ViewSet):
         try:
             result = task.get(timeout=10)
             
-            print(result)
-            
             if result.get('success') is False:
                 raise Exception(result.get('errors'))
 
@@ -287,3 +285,28 @@ class SpecificationView(APIView):
                 
         
         return Response({"data": dict})
+
+
+class ProductFilterView(APIView):
+    async def post(self, request):
+        try:
+
+            name_filter = request.data.get('name', None)
+            category_filter = request.data.get('category', None)
+            key_features = request.data.get('key_features', [])
+
+            skip = int(request.query_params.get('skip', 1))
+            limit = int(request.query_params.get('limit', 10))
+
+            task = get_all_products_task.delay(skip, limit, name_filter, category_filter, key_features)
+            
+            result = task.get(timeout=10)
+
+            return Response({
+                "page": skip,
+                "limit": limit,
+                "total": result['total'],
+                "data": result['data']
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

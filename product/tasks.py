@@ -23,9 +23,29 @@ def create_product_task(product_data):
 
 
 @shared_task
-def get_all_products_task(page=1, page_size=10):
+def get_all_products_task(page=1, page_size=10, name_filter=None, category_filter=None, key_features=None):
     offset = (page - 1) * page_size
-    products = Product.objects.select_related('inventory_product').all()[offset:offset + page_size] 
+    
+    # Start building the queryset
+    products = Product.objects.filter(isActive=True)
+
+    # Filter by name if provided
+    if name_filter:
+        products = products.filter(name__icontains=name_filter)
+
+    # Filter by category if provided
+    if category_filter:
+        products = products.filter(category__name__icontains=category_filter)
+
+    # Further filter by key features
+    if key_features:
+        for feature in key_features:
+            feature_name = feature.get('name')
+            feature_values = feature.get('value', [])
+            products = products.filter(key_features__name=feature_name, key_features__value__overlap=feature_values)
+
+    # Apply pagination
+    products = products[offset:offset + page_size]
     
     total_product = Product.objects.count()
     
@@ -54,7 +74,8 @@ def delete_product_task(product_id):
     try:
         product = Product.objects.get(id=product_id)
         product_data = ProductSerializer(product).data
-        product.delete()
+        product.isActive = False
+        product.save()
         
         return {'success': True, "product_data": product_data}
     except Product.DoesNotExist:

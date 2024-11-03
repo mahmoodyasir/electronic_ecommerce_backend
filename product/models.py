@@ -26,7 +26,10 @@ class Product(models.Model):
     brand = models.CharField(max_length=100)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')  
     description = models.TextField()
-    image_urls = ArrayField(models.URLField(max_length=200), blank=True, default=list) 
+    image_urls = ArrayField(models.URLField(max_length=200), blank=True, default=list)
+    isActive = models.BooleanField(default=True)
+    isHighlighted = models.BooleanField(default=False)
+    
 
     def __str__(self):
         return self.name

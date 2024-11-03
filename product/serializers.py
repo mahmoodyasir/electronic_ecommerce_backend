@@ -27,13 +27,15 @@ class ProductSerializer(serializers.ModelSerializer):
     specifications = SpecificationSerializer(many=True, required=False)
     inventory_product = InventorySerializer(required=False)
     product_code = serializers.CharField(required=False)
+    isActive = serializers.BooleanField(required=False)
+    isHighlighted = serializers.BooleanField(required=False)
     category = serializers.CharField()
 
     class Meta:
         model = Product
         fields = ['id', 'name', 'price', 'discount_price', 'product_code', 
                   'brand', 'category', 'image_urls', 'description', 
-                  'key_features', 'specifications', 'inventory_product']
+                  'key_features', 'specifications', 'inventory_product', 'isActive', 'isHighlighted']
 
     def create(self, validated_data):
         key_features_data = validated_data.pop('key_features', [])

@@ -56,3 +56,9 @@ class UserTokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['username', 'email', 'first_name', 'last_name', 'phone_number', 'address', 'image_url', 'is_staff', 'is_superuser']
+        
+        
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        exclude = ['password', 'groups', 'user_permissions']
