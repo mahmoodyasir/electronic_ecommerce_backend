@@ -5,7 +5,7 @@ from adrf.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import generics
 from product.models import Product, KeyFeature, Specification, Category
-from .serializers import ProductSerializer, KeyFeatureSerializer, SpecificationSerializer
+from .serializers import ProductSerializer, KeyFeatureSerializer, SpecificationSerializer, CategorySerializer
 from asgiref.sync import sync_to_async
 from rest_framework.response import Response
 from rest_framework import status, viewsets
@@ -236,11 +236,19 @@ class KeyFeatureView(APIView):
     
     async def get(self, request):
         
-        feature = await sync_to_async(list)(KeyFeature.objects.all())
+        category_name = request.query_params.get("category", None)
         
-        serializer = KeyFeatureSerializer(feature, many=True)
+        all_category = await sync_to_async(list)(Category.objects.all())
         
-        all_data = serializer.data
+        if category_name:
+            feature = await sync_to_async(list)(KeyFeature.objects.filter(product__category__name = category_name))
+        else:
+            feature = await sync_to_async(list)(KeyFeature.objects.all())
+            
+        serializer_keyfeature = KeyFeatureSerializer(feature, many=True)
+        serializer_category = CategorySerializer(all_category, many=True)
+        
+        all_data = serializer_keyfeature.data
         
         dict = {}
         
@@ -254,7 +262,14 @@ class KeyFeatureView(APIView):
                 dict[key] = set(value)
                 
         
-        return Response({"data": dict})
+        return Response({
+            "success": True,
+            "message": "Feature and Category Fetched",
+            "data": {
+                "category": serializer_category.data,
+                "feature": dict
+            }
+        })
     
     
 class SpecificationView(APIView):
@@ -294,11 +309,13 @@ class ProductFilterView(APIView):
             name_filter = request.data.get('name', None)
             category_filter = request.data.get('category', None)
             key_features = request.data.get('key_features', [])
+            min_price = request.data.get('min_price', None)
+            max_price = request.data.get('max_price', None)
 
             skip = int(request.query_params.get('skip', 1))
             limit = int(request.query_params.get('limit', 10))
 
-            task = get_all_products_task.delay(skip, limit, name_filter, category_filter, key_features)
+            task = get_all_products_task.delay(skip, limit, name_filter, category_filter, key_features, min_price, max_price)
             
             result = task.get(timeout=10)
 

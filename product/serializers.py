@@ -21,6 +21,11 @@ class InventorySerializer(serializers.ModelSerializer):
         model = Inventory
         fields = ['quantity', 'restock_alert', 'last_restocked'] 
         
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__' 
+        
 
 class ProductSerializer(serializers.ModelSerializer):
     key_features = KeyFeatureSerializer(many=True, required=False)

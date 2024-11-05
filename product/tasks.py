@@ -23,7 +23,7 @@ def create_product_task(product_data):
 
 
 @shared_task
-def get_all_products_task(page=1, page_size=10, name_filter=None, category_filter=None, key_features=None):
+def get_all_products_task(page=1, page_size=10, name_filter=None, category_filter=None, key_features=None, min_price=None, max_price=None):
     offset = (page - 1) * page_size
     
     # Start building the queryset
@@ -43,11 +43,16 @@ def get_all_products_task(page=1, page_size=10, name_filter=None, category_filte
             feature_name = feature.get('name')
             feature_values = feature.get('value', [])
             products = products.filter(key_features__name=feature_name, key_features__value__overlap=feature_values)
+            
+    if min_price is not None:
+        products = products.filter(price__gte=min_price)
+    if max_price is not None:
+        products = products.filter(price__lte=max_price)
 
     # Apply pagination
     products = products[offset:offset + page_size]
     
-    total_product = Product.objects.count()
+    total_product = products.count()
     
     serialized_products = ProductSerializer(products, many=True).data
     

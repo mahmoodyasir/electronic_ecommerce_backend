@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'django_celery_results',
     'storages',
+    'corsheaders',
     
     # Created Apps
     'authentication',
@@ -58,7 +59,9 @@ INSTALLED_APPS = [
     
 ]
 
+
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -67,6 +70,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_URLS_REGEX = r'^/api.*'
+
+CORS_ORIGIN_ALLOW_ALL = True
 
 
 ROOT_URLCONF = 'electronic_ecommerce_backend.urls'
