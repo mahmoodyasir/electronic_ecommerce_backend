@@ -1,3 +1,5 @@
+from datetime import datetime
+import uuid
 from django.shortcuts import render
 import json
 import urllib.parse
@@ -5,6 +7,7 @@ from adrf.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import generics
 from product.models import Product, KeyFeature, Specification, Category
+from utils import utils
 from .serializers import ProductSerializer, KeyFeatureSerializer, SpecificationSerializer, CategorySerializer
 from asgiref.sync import sync_to_async
 from rest_framework.response import Response
@@ -80,11 +83,13 @@ class ProductViewSet(viewsets.ViewSet):
 
             
             for image in images:
+                file_type = mimetypes.guess_type(image.name)[0].split('/')[-1]
+                unique_filename = f"{uuid.uuid4().hex}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{file_type}"
                 sanitized_filename = urllib.parse.quote(image.name.replace(" ", "_"))
-                temp_file_path = default_storage.save(f'static/{sanitized_filename}', image)
-                upload_image_to_s3_task.delay(temp_file_path, sanitized_filename)
+                temp_file_path = default_storage.save(f'static/{unique_filename}', image)
+                upload_image_to_s3_task.delay(temp_file_path, unique_filename)
                 
-                image_url = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/products/{sanitized_filename}"
+                image_url = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/products/{unique_filename}"
                 image_urls.append(image_url)
 
 
@@ -143,11 +148,13 @@ class ProductViewSet(viewsets.ViewSet):
             # Upload new images using Celery and collect new URLs
             new_image_urls = []
             for image in new_images:
+                file_type = mimetypes.guess_type(image.name)[0].split('/')[-1]
+                unique_filename = f"{uuid.uuid4().hex}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{file_type}"
                 sanitized_filename = urllib.parse.quote(image.name.replace(" ", "_"))
-                temp_file_path = default_storage.save(f'static/{sanitized_filename}', image)
-                upload_image_to_s3_task.delay(temp_file_path, sanitized_filename)
+                temp_file_path = default_storage.save(f'static/{unique_filename}', image)
+                upload_image_to_s3_task.delay(temp_file_path, unique_filename)
 
-                new_image_url = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/products/{sanitized_filename}"
+                new_image_url = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/products/{unique_filename}"
                 new_image_urls.append(new_image_url)
             
             # Combining existing URLs with new ones
@@ -232,6 +239,42 @@ class ProductViewSet(viewsets.ViewSet):
         
         
         
+class UpdateProductImagesView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+    permission_classes = [IsAdminUser]  
+
+    def put(self, request, pk):
+        try:
+            product = Product.objects.get(pk=pk)
+            
+            new_images = request.FILES.getlist('images')  
+        
+            new_image_urls = []
+            for image in new_images:
+                file_type = mimetypes.guess_type(image.name)[0].split('/')[-1]
+                unique_filename = f"{uuid.uuid4().hex}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{file_type}"
+                sanitized_filename = urllib.parse.quote(image.name.replace(" ", "_"))
+                temp_file_path = default_storage.save(f'static/{unique_filename}', image)
+                upload_image_to_s3_task.delay(temp_file_path, unique_filename)
+
+                new_image_url = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/products/{unique_filename}"
+                new_image_urls.append(new_image_url)
+
+            product.image_urls = new_image_urls
+            product.save()
+
+            return Response({
+                "message": "Product images updated successfully.",
+                "image_urls": product.image_urls
+            }, status=status.HTTP_200_OK)
+
+        except Product.DoesNotExist:
+            return Response({"error": "Product not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        
+        
 class KeyFeatureView(APIView):
     
     async def get(self, request):
@@ -253,7 +296,7 @@ class KeyFeatureView(APIView):
         dict = {}
         
         for item in all_data:
-            key = item["name"].lower()
+            key = item["name"]
             value = item["value"]
             
             if key in dict:
@@ -319,11 +362,22 @@ class ProductFilterView(APIView):
             
             result = task.get(timeout=10)
 
-            return Response({
-                "page": skip,
-                "limit": limit,
-                "total": result['total'],
-                "data": result['data']
-            }, status=status.HTTP_200_OK)
+            # return Response({
+            #     "page": skip,
+            #     "limit": limit,
+            #     "total": result['total'],
+            #     "data": result['data']
+            # }, status=status.HTTP_200_OK)
+            
+            return utils.create_response(
+                success=True,
+                message="All Filtered Products Fetched",
+                status_code=status.HTTP_200_OK,
+                page=skip,
+                page_size=limit,
+                total=result['total'],
+                total_page=result['total_page'],
+                data=result['data'] 
+            )
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

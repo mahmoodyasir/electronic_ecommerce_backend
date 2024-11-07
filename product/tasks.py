@@ -1,3 +1,4 @@
+import math
 import boto3
 from celery import shared_task
 from django.conf import settings
@@ -28,6 +29,8 @@ def get_all_products_task(page=1, page_size=10, name_filter=None, category_filte
     
     # Start building the queryset
     products = Product.objects.filter(isActive=True)
+    
+    total_product = products.count()
 
     # Filter by name if provided
     if name_filter:
@@ -38,26 +41,35 @@ def get_all_products_task(page=1, page_size=10, name_filter=None, category_filte
         products = products.filter(category__name__icontains=category_filter)
 
     # Further filter by key features
+    # if key_features:
+    #     for feature in key_features:
+    #         feature_name = feature.get('name')
+    #         feature_values = feature.get('value', [])
+    #         print(feature_name)
+    #         print(feature_values)
+    #         products = products.filter(key_features__name=feature_name, key_features__value__overlap=feature_values)
+            
     if key_features:
-        for feature in key_features:
-            feature_name = feature.get('name')
-            feature_values = feature.get('value', [])
-            products = products.filter(key_features__name=feature_name, key_features__value__overlap=feature_values)
+        for key, value in key_features.items():
+            products = products.filter(key_features__name=key, key_features__value__overlap=value)
             
     if min_price is not None:
         products = products.filter(price__gte=min_price)
     if max_price is not None:
         products = products.filter(price__lte=max_price)
+        
+    total_product = products.count()
 
     # Apply pagination
     products = products[offset:offset + page_size]
     
-    total_product = products.count()
-    
     serialized_products = ProductSerializer(products, many=True).data
+    
+    total_page = math.ceil(total_product/page_size)
     
     response = {
         "total": total_product,
+        "total_page": total_page,
         "data": serialized_products
     }
     
