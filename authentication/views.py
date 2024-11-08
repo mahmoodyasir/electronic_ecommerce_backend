@@ -51,28 +51,62 @@ class UserLoginView(generics.GenericAPIView):
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
 
-        user = authenticate(
-            request, 
-            email=serializer.validated_data['email'], 
-            password=serializer.validated_data['password']
-        )
+            user = authenticate(
+                request, 
+                email=serializer.validated_data['email'], 
+                password=serializer.validated_data['password']
+            )
 
-        if user is not None:
-            refresh = RefreshToken.for_user(user)
-            token_data = {
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            }
+            if user is not None:
+                refresh = RefreshToken.for_user(user)
+                token_data = {
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                }
 
-            return Response({
-                'tokens': token_data,       
-                'user': UserTokenSerializer(user).data 
-            }, status=200)
-        else:
-            return Response({"detail": "Invalid credentials"}, status=401)
+                return Response({
+                    'tokens': token_data,       
+                    'user': UserTokenSerializer(user).data 
+                }, status=200)
+        except Exception as e:
+            return Response({'error': "Invalid Credentials"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+class AdminLoginView(generics.GenericAPIView):
+    serializer_class = UserLoginSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            user = authenticate(
+                request, 
+                email=serializer.validated_data['email'], 
+                password=serializer.validated_data['password']
+            )
+
+            if user is not None:
+                if user.is_staff == True:
+                    refresh = RefreshToken.for_user(user)
+                    token_data = {
+                        'refresh': str(refresh),
+                        'access': str(refresh.access_token),
+                    }
+                else:
+                    return Response({"detail": "You are not Authorized !"}, status=500)
+
+                return Response({
+                    'tokens': token_data,       
+                    'user': UserTokenSerializer(user).data 
+                }, status=200)
+        except Exception as e:
+            return Response({'error': "Invalid Credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserDetailView(generics.RetrieveAPIView):
