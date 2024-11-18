@@ -1,6 +1,15 @@
+from datetime import datetime
+import mimetypes
+import uuid
+from django.conf import settings
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
+
+from product.tasks import delete_image_from_s3_task
+from utils import utils
+
+from .tasks import upload_user_image_to_s3_task
 from .serializers import UserRegistrationSerializer, UserLoginSerializer, UserTokenSerializer
 from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -9,6 +18,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.core.files.storage import default_storage
 
 User = get_user_model()
 
@@ -30,6 +40,7 @@ class UserRegistrationView(generics.CreateAPIView):
                     'first_name': user.first_name,
                     'last_name': user.last_name,
                     'phone_number': user.phone_number,
+                    'countryInitial': user.countryInitial,
                     'address': user.address,
                     'image_url': user.image_url,
                     'is_staff': user.is_staff,
@@ -127,3 +138,37 @@ class UserDetailView(generics.RetrieveAPIView):
         }
 
         return Response(token_data, status=200)
+    
+class UpdateUserDetails(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    
+    def put(self, request):
+        user = request.user
+        data = request.data
+        
+        if 'image' in request.FILES:
+            image = request.FILES['image']
+            file_type = mimetypes.guess_type(image.name)[0].split('/')[-1]
+            unique_filename = f"{uuid.uuid4().hex}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{file_type}"
+            temp_file_path = default_storage.save(f'static/{unique_filename}', image)
+            delete_image_from_s3_task.delay(user.image_url)
+            upload_user_image_to_s3_task.delay(temp_file_path, unique_filename)
+            image_url = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/users/{unique_filename}"
+            user.image_url = image_url
+        
+        
+        for attr, value in data.items():
+            if attr != 'image_url':
+                setattr(user, attr, value)
+        
+        user.save()
+        
+        return utils.create_response(
+                success=True,
+                message="User Updated Successfully",
+                status_code=status.HTTP_200_OK,
+                data=UserTokenSerializer(user).data
+            )
+        
+        

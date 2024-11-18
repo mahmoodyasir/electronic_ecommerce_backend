@@ -12,7 +12,7 @@ User = get_user_model()
 class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['email', 'password', 'first_name', 'last_name', 'phone_number', 'address', 'image_url']
+        fields = ['email', 'password', 'first_name', 'last_name', 'phone_number', 'countryCode', 'countryInitial', 'address', 'image_url']
         extra_kwargs = {
             'password': {'write_only': True}
         }
@@ -26,6 +26,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             first_name=validated_data.get('first_name', ''),
             last_name=validated_data.get('last_name', ''),
             phone_number=validated_data.get('phone_number', ''),
+            countryCode=validated_data.get('countryCode', ''),
+            countryInitial=validated_data.get('countryInitial', ''),
             address=validated_data.get('address', ''),
             image_url=validated_data.get('image_url', ''),
         )
@@ -55,7 +57,7 @@ class UserLoginSerializer(serializers.Serializer):
 class UserTokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone_number', 'address', 'image_url', 'is_staff', 'is_superuser']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone_number', 'countryCode', 'countryInitial', 'address', 'image_url', 'is_staff', 'is_superuser']
         
         
 class UserSerializer(serializers.ModelSerializer):

@@ -25,6 +25,8 @@ class CustomUserManager(BaseUserManager):
 class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
+    countryCode = models.CharField(max_length=15, blank=True, null=True)
+    countryInitial = models.CharField(max_length=25, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     image_url = models.URLField(blank=True, null=True)
 
