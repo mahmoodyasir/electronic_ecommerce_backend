@@ -117,6 +117,18 @@ DATABASES = {
 }
 
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://redis:6379/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'SERIALIZER': 'django_redis.serializers.json.JSONSerializer',
+        }
+    }
+}
+
+
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -199,6 +211,16 @@ AWS_S3_OBJECT_PARAMETERS = {
 # django-storages settings
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
+
+
+# SSLCOMMERZ Settings
+STORE_ID = os.getenv('STORE_ID')
+STORE_PASS = os.getenv('STORE_PASS')
+SSLCZ_SESSION_API = os.getenv('SSLCZ_SESSION_API')
+SSLCZ_VALIDATION_API = os.getenv('SSLCZ_VALIDATION_API')
+
+
+FRONTEND_URL = os.getenv('FRONTEND_URL')
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 

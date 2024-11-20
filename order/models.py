@@ -9,6 +9,7 @@ import random
 class Order(models.Model):
     ORDER_STATUS_CHOICES = [
         ('pending', 'Pending'),
+        ('processing', 'Processing'),
         ('on_the_way', 'On The Way'),
         ('completed', 'Completed'),
         ('shipped', 'Shipped'),
