@@ -18,6 +18,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.exceptions import ValidationError
 from django.core.files.storage import default_storage
 
 User = get_user_model()
@@ -36,6 +37,8 @@ class UserRegistrationView(generics.CreateAPIView):
 
             return Response({
                 'user': {
+                    'id': user.id,
+                    'username': user.username,
                     'email': user.email,
                     'first_name': user.first_name,
                     'last_name': user.last_name,
@@ -52,6 +55,14 @@ class UserRegistrationView(generics.CreateAPIView):
                 },
                 'message': 'User registered successfully.',
             }, status=status.HTTP_201_CREATED)
+        except ValidationError as ve:
+            # Extracting error message(s) from ValidationError
+            error_details = ve.detail
+            error_messages = []
+            for field, errors in error_details.items():
+                error_messages.extend(errors)
+            
+            return Response({'error': error_messages[0]}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
