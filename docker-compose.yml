@@ -14,11 +14,14 @@ services:
             - .env  
         environment:
             - DEBUG=1
-            - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
+            - DJANGO_ALLOWED_HOSTS=3.82.191.125,localhost 127.0.0.1
             - CELERY_BROKER=redis://redis:6379/0
             - CELERY_BACKEND=redis://redis:6379/0
+            - DB_HOST=${DB_HOST}
+            - DB_NAME=${DB_NAME}
+            - DB_USER=${DB_USER}
+            - DB_PASSWORD=${DB_PASSWORD}
         depends_on:
-            - pgdb
             - redis
     celery:
         build: .
@@ -27,25 +30,12 @@ services:
             - .:/usr/src/app
         environment:
             - DEBUG=1
-            - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
+            - DJANGO_ALLOWED_HOSTS=3.82.191.125,localhost 127.0.0.1
             - CELERY_BROKER=redis://redis:6379/0
             - CELERY_BACKEND=redis://redis:6379/0
             - CELERY_APP=electronic_ecommerce_backend.celery
         depends_on:
             - django
             - redis
-    pgdb:
-        image: postgres
-        container_name: pgdb
-        environment:
-            - POSTGRES_DB=${DB_NAME}
-            - POSTGRES_USER=${DB_USER}
-            - POSTGRES_PASSWORD=${DB_PASSWORD}
-        volumes:
-            - pgdata:/var/lib/postgresql/data/
     redis:
         image: "redis:alpine"
-        
-volumes:
-    pgdata:
-
