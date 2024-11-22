@@ -7,4 +7,4 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'electronic_ecommerce_backend.se
 app = Celery('electronic_ecommerce_backend')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
-app.conf.result_expires = 3600
+app.conf.result_expires = 300

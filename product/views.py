@@ -19,26 +19,26 @@ import boto3
 import mimetypes
 from django.core.files.storage import default_storage
 
-# class ProductCreateView(APIView):
-#     permission_classes = [IsAdminUser]
+class ProductCreateView(APIView):
+    permission_classes = [IsAdminUser]
 
-#     def post(self, request):
+    def post(self, request):
         
-#         tasks = create_product_task.delay(request.data)
+        tasks = create_product_task.delay(request.data)
         
-#         try:   
-#             result = tasks.get(timeout=10)
+        try:   
+            result = tasks.get(timeout=10)
             
-#             if result.get('success') == False:
-#                 raise Exception(result.get('errors'))
+            if result.get('success') == False:
+                raise Exception(result.get('errors'))
             
-#             return Response({
-#                 "message": "Product creation complete.",
-#                 "product_data": result.get('product')
+            return Response({
+                "message": "Product creation complete.",
+                "product_data": result.get('product_data')
                 
-#             }, status=status.HTTP_201_CREATED)
-#         except Exception as e:
-#             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
 # class ProductListView(APIView):

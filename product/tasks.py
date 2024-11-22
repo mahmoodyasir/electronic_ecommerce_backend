@@ -28,7 +28,7 @@ def get_all_products_task(page=1, page_size=10, name_filter=None, category_filte
     offset = (page - 1) * page_size
     
     # Start building the queryset
-    products = Product.objects.filter(isActive=True)
+    products = Product.objects.filter(isActive=True).order_by('-id')
     
     total_product = products.count()
 
