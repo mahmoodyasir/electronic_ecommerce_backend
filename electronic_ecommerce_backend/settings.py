@@ -77,6 +77,11 @@ CORS_URLS_REGEX = r'^/api.*'
 
 CORS_ORIGIN_ALLOW_ALL = True
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://3.83.143.159',
+    'http://3.83.143.159',
+]
+
 
 ROOT_URLCONF = 'electronic_ecommerce_backend.urls'
 
