@@ -37,7 +37,7 @@ def handleOnlineOrder(request, orderInfo, userInfo, orderId):
     store_pass = settings.STORE_PASS
     mypayment = SSLCSession(sslc_is_sandbox=True, sslc_store_id=store_id, sslc_store_pass=store_pass)
     
-    status_url = request.build_absolute_uri(reverse('status'))
+    status_url = f"https://{request.get_host()}{reverse('status')}"
     
     mypayment.set_urls(success_url=status_url, fail_url=status_url, cancel_url=status_url, ipn_url=status_url)
     

@@ -79,9 +79,7 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 CSRF_TRUSTED_ORIGINS = [
     'https://3.83.143.159',
-    'http://3.83.143.159',
     'https://electronic-ecommerce-1.shop',
-    'http://electronic-ecommerce-1.shop',
 ]
 
 
