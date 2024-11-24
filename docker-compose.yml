@@ -15,7 +15,7 @@ services:
             - .env  
         environment:
             - DEBUG=1
-            - DJANGO_ALLOWED_HOSTS=3.82.191.125,localhost 127.0.0.1
+            - DJANGO_ALLOWED_HOSTS=3.83.143.159,localhost 127.0.0.1, https://electronic-ecommerce-1.shop, http://electronic-ecommerce-1.shop
             - CELERY_BROKER=redis://redis:6379/0
             - CELERY_BACKEND=redis://redis:6379/0
             - DB_HOST=${DB_HOST}
@@ -31,7 +31,7 @@ services:
             - .:/usr/src/app
         environment:
             - DEBUG=1
-            - DJANGO_ALLOWED_HOSTS=3.82.191.125,localhost 127.0.0.1
+            - DJANGO_ALLOWED_HOSTS=3.83.143.159,localhost 127.0.0.1, https://electronic-ecommerce-1.shop, http://electronic-ecommerce-1.shop/
             - CELERY_BROKER=redis://redis:6379/0
             - CELERY_BACKEND=redis://redis:6379/0
             - CELERY_APP=electronic_ecommerce_backend.celery
